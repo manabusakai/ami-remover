@@ -1,6 +1,18 @@
 require 'aws-sdk-ec2'
+require 'optparse'
 
 AWS_REGION='ap-northeast-1'
+
+def parse_options
+  options = { remove_flag: false }
+  OptionParser.new do |opt|
+    opt.on('-r', '--remove', 'remove flag') do
+      options[:remove_flag] = true
+    end
+    opt.parse!(ARGV)
+  end
+  return options
+end
 
 def get_snapshot_ids(block_device_mappings)
   snapshot_ids = []
@@ -42,4 +54,10 @@ def describe_images
   end
 end
 
-describe_images
+options = parse_options
+
+if options[:remove_flag]
+  # Remove AMI
+else
+  describe_images
+end
