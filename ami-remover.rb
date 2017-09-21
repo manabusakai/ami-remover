@@ -1,7 +1,9 @@
 require 'aws-sdk-ec2'
 require 'optparse'
+require 'pp'
 
-AWS_REGION='ap-northeast-1'
+AWS_REGION = 'ap-northeast-1'
+DEBUG = ! ENV['DEBUG'].nil? ? true : false
 
 def parse_options
   options = { remove_flag: false }
@@ -40,6 +42,7 @@ def get_images
       'snapshot_id'   => snapshot_ids,
     }
   end
+  pp images if DEBUG # for debug
 
   return images
 end
