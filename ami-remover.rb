@@ -11,6 +11,9 @@ def parse_options
     opt.on('-r', '--remove', 'remove flag') do
       options[:remove_flag] = true
     end
+    opt.on('-v', '--verbose', 'more verbose') do
+      options[:verbose] = true
+    end
     opt.parse!(ARGV)
   end
   return options
@@ -47,20 +50,27 @@ def get_images
   return images
 end
 
-def describe_images
-  puts "IMAGE_ID\tNAME\tCREATION_DATE"
-
-  get_images.each do |image_id, attribute|
-    print "#{image_id}\t"
-    print "\"#{attribute['name']}\"\t"
-    print "\"#{attribute['creation_date']}\"\n"
+def describe_images(filter)
+  images = get_images
+  if filter[:verbose]
+    images.each do |image_id, attribute|
+      print "#{image_id}\t"
+      print "\"#{attribute['name']}\"\t"
+      print "\"#{attribute['creation_date']}\"\n"
+    end
+    puts "count: #{images.size}"
+  else
+    images.each do |image_id, attribute|
+      puts "#{image_id}"
+    end
   end
 end
 
 options = parse_options
+filter = { verbose: options[:verbose] }
 
 if options[:remove_flag]
   # Remove AMI
 else
-  describe_images
+  describe_images(filter)
 end
