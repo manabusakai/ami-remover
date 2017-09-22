@@ -1,4 +1,5 @@
 require 'aws-sdk-ec2'
+require 'date'
 require 'optparse'
 require 'pp'
 
@@ -8,6 +9,9 @@ DEBUG = ! ENV['DEBUG'].nil? ? true : false
 def parse_options
   options = { remove_flag: false }
   OptionParser.new do |opt|
+    opt.on('-d NUM', '--days NUM', 'days option') do |days|
+      options[:days] = days.to_i
+    end
     opt.on('-r', '--remove', 'remove flag') do
       options[:remove_flag] = true
     end
@@ -27,7 +31,23 @@ def get_snapshot_ids(block_device_mappings)
   return snapshot_ids
 end
 
-def get_images
+def filtering_images(images, filter)
+  if ! filter[:days].nil?
+    ENV['TZ'] = 'UTC'
+    threshold_date = DateTime.now - filter[:days]
+
+    # Exclude AMI newer than threshold date.
+    images.each do |image_id, attribute|
+      creation_date = DateTime.parse(attribute['creation_date'])
+      if creation_date > threshold_date
+        images.delete(image_id)
+      end
+    end
+  end
+  return images
+end
+
+def get_images(filter)
   ec2  = Aws::EC2::Client.new(region: AWS_REGION)
   resp = ec2.describe_images({owners: ['self']})
 
@@ -45,13 +65,24 @@ def get_images
       'snapshot_id'   => snapshot_ids,
     }
   end
-  pp images if DEBUG # for debug
+
+  if DEBUG
+    puts "\e[31mBefore filtering\e[0m"
+    pp images
+  end
+
+  images = filtering_images(images, filter)
+
+  if DEBUG
+    puts "\e[31mAfter filtering\e[0m"
+    pp images
+  end
 
   return images
 end
 
 def describe_images(filter)
-  images = get_images
+  images = get_images(filter)
   if filter[:verbose]
     images.each do |image_id, attribute|
       print "#{image_id}\t"
@@ -67,7 +98,7 @@ def describe_images(filter)
 end
 
 options = parse_options
-filter = { verbose: options[:verbose] }
+filter = { days: options[:days], verbose: options[:verbose] }
 
 if options[:remove_flag]
   # Remove AMI
