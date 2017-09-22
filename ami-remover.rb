@@ -2,6 +2,7 @@ require 'aws-sdk-ec2'
 require 'date'
 require 'optparse'
 require 'pp'
+require 'tty-prompt'
 
 AWS_REGION = 'ap-northeast-1'
 DEBUG = ! ENV['DEBUG'].nil? ? true : false
