@@ -66,17 +66,9 @@ def get_images(filter)
     }
   end
 
-  if DEBUG
-    puts "\e[31mBefore filtering\e[0m"
-    pp images
-  end
-
+  debug_output('Before filtering', images) if DEBUG
   images = filtering_images(images, filter)
-
-  if DEBUG
-    puts "\e[31mAfter filtering\e[0m"
-    pp images
-  end
+  debug_output('After filtering', images) if DEBUG
 
   return images
 end
@@ -95,6 +87,11 @@ def describe_images(filter)
       puts "#{image_id}"
     end
   end
+end
+
+def debug_output(message, object)
+    puts "\e[31m#{message}\e[0m"
+    pp object
 end
 
 options = parse_options
