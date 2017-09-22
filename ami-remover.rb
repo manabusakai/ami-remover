@@ -31,7 +31,7 @@ def get_snapshot_ids(block_device_mappings)
   return snapshot_ids
 end
 
-def filtering_images(images, filter)
+def filter_images(images, filter)
   if ! filter[:days].nil?
     ENV['TZ'] = 'UTC'
     threshold_date = DateTime.now - filter[:days]
@@ -67,7 +67,7 @@ def get_images(filter)
   end
 
   debug_output('Before filtering', images) if DEBUG
-  images = filtering_images(images, filter)
+  images = filter_images(images, filter)
   debug_output('After filtering', images) if DEBUG
 
   return images
