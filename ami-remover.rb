@@ -71,6 +71,10 @@ def get_images(filter)
   images = filter_images(images, filter)
   debug_output('After filtering', images) if DEBUG
 
+  images = images.sort_by do |image_id, attribute|
+    attribute['creation_date']
+  end.to_h
+
   return images
 end
 
@@ -89,9 +93,9 @@ def describe_images(filter)
   images = get_images(filter)
   if filter[:verbose]
     images.each do |image_id, attribute|
-      print "#{image_id}\t"
-      print "\"#{attribute['name']}\"\t"
-      print "\"#{attribute['creation_date']}\"\n"
+      print "#{image_id}\s\s"
+      print "#{attribute['creation_date']}\s\s"
+      print "#{attribute['name']}\n"
     end
     puts "count: #{images.size}"
   else
