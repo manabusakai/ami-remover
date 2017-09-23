@@ -27,7 +27,7 @@ end
 def get_snapshot_ids(block_device_mappings)
   snapshot_ids = []
   block_device_mappings.each do |mapping|
-    snapshot_ids.push mapping.ebs.snapshot_id
+    snapshot_ids.push mapping.ebs.snapshot_id if ! mapping.ebs.nil?
   end
   return snapshot_ids
 end
