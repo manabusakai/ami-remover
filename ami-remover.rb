@@ -63,7 +63,7 @@ def get_images(filter)
     images[image_id] = {
       'name'          => name,
       'creation_date' => creation_date,
-      'snapshot_id'   => snapshot_ids,
+      'snapshot_ids'  => snapshot_ids,
     }
   end
 
@@ -72,6 +72,17 @@ def get_images(filter)
   debug_output('After filtering', images) if DEBUG
 
   return images
+end
+
+def remove_images(images)
+  ec2 = Aws::EC2::Client.new(region: AWS_REGION)
+  images.each do |image_id, attribute|
+    ec2.deregister_image({image_id: image_id})
+    attribute['snapshot_ids'].each do |snapshot_id|
+      ec2.delete_snapshot({snapshot_id: snapshot_id})
+    end
+    sleep(0.5)
+  end
 end
 
 def describe_images(filter)
@@ -88,18 +99,22 @@ def describe_images(filter)
       puts "#{image_id}"
     end
   end
+  return images
 end
 
 def debug_output(message, object)
-    puts "\e[31m#{message}\e[0m"
-    pp object
+  puts "\e[31m#{message}\e[0m"
+  pp object
 end
 
 options = parse_options
 filter = { days: options[:days], verbose: options[:verbose] }
 
+images = describe_images(filter)
+
 if options[:remove_flag]
-  # Remove AMI
-else
-  describe_images(filter)
+  prompt = TTY::Prompt.new(enable_color: false)
+  if prompt.yes?('Do you want to delete it?')
+    remove_images(images)
+  end
 end
