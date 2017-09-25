@@ -11,13 +11,19 @@ DEBUG = ! ENV['DEBUG'].nil? ? true : false
 def parse_options
   options = { remove_flag: false }
   OptionParser.new do |opt|
-    opt.on('-d NUM', '--days NUM', 'days option') do |days|
+    opt.on('-d NUM', '--days NUM') do |days|
       options[:days] = days.to_i
     end
-    opt.on('-r', '--remove', 'remove flag') do
+    opt.on('--include-tag TAG') do |tag|
+      options[:include_tag] = tag.to_s
+    end
+    opt.on('--exclude-tag TAG') do |tag|
+      options[:exclude_tag] = tag.to_s
+    end
+    opt.on('-r', '--remove') do
       options[:remove_flag] = true
     end
-    opt.on('-v', '--verbose', 'more verbose') do
+    opt.on('-v', '--verbose') do
       options[:verbose] = true
     end
     opt.parse!(ARGV)
@@ -44,6 +50,27 @@ def filter_images(images, filter)
       images.delete image_id if creation_date > threshold_date
     end
   end
+
+  # Include or Exclude AMI by tag name.
+  if ! filter[:include_tag].nil? || ! filter[:exclude_tag].nil?
+    images.each do |image_id, attribute|
+      image_tags = []
+      attribute['tags'].each do |tag|
+        image_tags.push tag.key
+      end
+
+      unless filter[:include_tag].nil?
+        next if image_tags.include?(filter[:include_tag])
+        images.delete(image_id)
+      end
+
+      unless filter[:exclude_tag].nil?
+        next unless image_tags.include?(filter[:exclude_tag])
+        images.delete(image_id)
+      end
+    end
+  end
+
   images
 end
 
@@ -71,11 +98,12 @@ def get_images(filter)
   exclude_image_ids = get_images_of_launch_configurations
 
   resp.images.each do |image|
-    # Exclude AMI included in launch configurations
+    # Exclude AMI included in launch configurations.
     next if exclude_image_ids.include?(image.image_id)
 
     images[image.image_id] = {
       'name'          => image.name,
+      'tags'          => image.tags,
       'creation_date' => image.creation_date,
       'snapshot_ids'  => get_snapshot_ids(image.block_device_mappings)
     }
@@ -126,7 +154,20 @@ def debug_output(message, object)
 end
 
 options = parse_options
-filter = { days: options[:days], verbose: options[:verbose] }
+
+if ! options[:include_tag].nil? && ! options[:exclude_tag].nil?
+  print "\e[31m"
+  print 'Error: `--include-tag` and `--exclude-tag` can not be used together.'
+  print "\e[0m\n"
+  exit 1
+end
+
+filter = {
+  days:        options[:days],
+  include_tag: options[:include_tag],
+  exclude_tag: options[:exclude_tag],
+  verbose:     options[:verbose]
+}
 
 images = describe_images(filter)
 
