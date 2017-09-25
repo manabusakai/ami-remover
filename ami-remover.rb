@@ -22,31 +22,29 @@ def parse_options
     end
     opt.parse!(ARGV)
   end
-  return options
+  options
 end
 
 def get_snapshot_ids(block_device_mappings)
   snapshot_ids = []
   block_device_mappings.each do |mapping|
-    snapshot_ids.push mapping.ebs.snapshot_id if ! mapping.ebs.nil?
+    snapshot_ids.push mapping.ebs.snapshot_id unless mapping.ebs.nil?
   end
-  return snapshot_ids
+  snapshot_ids
 end
 
 def filter_images(images, filter)
-  if ! filter[:days].nil?
+  # Exclude AMI newer than threshold date.
+  unless filter[:days].nil?
     ENV['TZ'] = 'UTC'
     threshold_date = DateTime.now - filter[:days]
 
-    # Exclude AMI newer than threshold date.
     images.each do |image_id, attribute|
       creation_date = DateTime.parse(attribute['creation_date'])
-      if creation_date > threshold_date
-        images.delete(image_id)
-      end
+      images.delete image_id if creation_date > threshold_date
     end
   end
-  return images
+  images
 end
 
 def get_images_of_launch_configurations
@@ -62,7 +60,7 @@ def get_images_of_launch_configurations
     end
     next_token = resp.next_token
   end
-  return image_ids.uniq
+  image_ids.uniq
 end
 
 def get_images(filter)
@@ -73,18 +71,13 @@ def get_images(filter)
   exclude_image_ids = get_images_of_launch_configurations
 
   resp.images.each do |image|
-    image_id      = image.image_id
-    name          = image.name
-    creation_date = image.creation_date
-    snapshot_ids  = get_snapshot_ids(image.block_device_mappings)
-
     # Exclude AMI included in launch configurations
-    next if exclude_image_ids.include?(image_id)
+    next if exclude_image_ids.include?(image.image_id)
 
-    images[image_id] = {
-      'name'          => name,
-      'creation_date' => creation_date,
-      'snapshot_ids'  => snapshot_ids,
+    images[image.image_id] = {
+      'name'          => image.name,
+      'creation_date' => image.creation_date,
+      'snapshot_ids'  => get_snapshot_ids(image.block_device_mappings)
     }
   end
 
@@ -96,7 +89,7 @@ def get_images(filter)
     attribute['creation_date']
   end.to_h
 
-  return images
+  images
 end
 
 def remove_images(images)
@@ -124,7 +117,7 @@ def describe_images(filter)
       puts "#{image_id}"
     end
   end
-  return images
+  images
 end
 
 def debug_output(message, object)
