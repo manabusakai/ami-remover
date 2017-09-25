@@ -1,3 +1,4 @@
+require 'aws-sdk-autoscaling'
 require 'aws-sdk-ec2'
 require 'date'
 require 'optparse'
@@ -48,17 +49,37 @@ def filter_images(images, filter)
   return images
 end
 
+def get_images_of_launch_configurations
+  autoscaling = Aws::AutoScaling::Client.new(region: AWS_REGION)
+
+  next_token = ''
+  image_ids  = []
+
+  until next_token.nil?
+    resp = autoscaling.describe_launch_configurations({next_token: next_token})
+    resp.launch_configurations.each do |configuration|
+      image_ids.push configuration.image_id
+    end
+    next_token = resp.next_token
+  end
+  return image_ids.uniq
+end
+
 def get_images(filter)
   ec2  = Aws::EC2::Client.new(region: AWS_REGION)
   resp = ec2.describe_images({owners: ['self']})
 
   images = {}
+  exclude_image_ids = get_images_of_launch_configurations
 
   resp.images.each do |image|
     image_id      = image.image_id
     name          = image.name
     creation_date = image.creation_date
     snapshot_ids  = get_snapshot_ids(image.block_device_mappings)
+
+    # Exclude AMI included in launch configurations
+    next if exclude_image_ids.include?(image_id)
 
     images[image_id] = {
       'name'          => name,
