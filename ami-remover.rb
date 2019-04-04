@@ -5,7 +5,6 @@ require 'optparse'
 require 'pp'
 require 'tty-prompt'
 
-AWS_REGION = 'ap-northeast-1'
 DEBUG = ! ENV['DEBUG'].nil? ? true : false
 
 def parse_options
@@ -19,6 +18,9 @@ def parse_options
     end
     opt.on('--exclude-tag TAG') do |tag|
       options[:exclude_tag] = tag.to_s
+    end
+    opt.on('--region REGION') do |region|
+      options[:region] = region.to_s
     end
     opt.on('-r', '--remove') do
       options[:remove_flag] = true
@@ -155,12 +157,21 @@ end
 
 options = parse_options
 
+if options[:region].nil?
+  print "\e[31m"
+  print 'Error: `--region` is required.'
+  print "\e[0m\n"
+  exit 1
+end
+
 if ! options[:include_tag].nil? && ! options[:exclude_tag].nil?
   print "\e[31m"
   print 'Error: `--include-tag` and `--exclude-tag` can not be used together.'
   print "\e[0m\n"
   exit 1
 end
+
+AWS_REGION = options[:region]
 
 filter = {
   days:        options[:days],

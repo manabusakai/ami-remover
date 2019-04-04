@@ -32,13 +32,13 @@ aws_secret_access_key = YOUR_SECRET_ACCESS_KEY
 By default, it only displays the AMI ID. (`-v` or `--verbose` is verbose mode.)
 
 ```
-$ bundle exec ruby ami-remover.rb [-v|--verbose]
+$ bundle exec ruby ami-remover.rb --region <region> [-v|--verbose]
 ```
 
 If you want to delete, please add a remove option.
 
 ```
-$ bundle exec ruby ami-remover.rb [-r|--remove]
+$ bundle exec ruby ami-remover.rb --region <region> [-r|--remove]
 ```
 
 ## Filter
