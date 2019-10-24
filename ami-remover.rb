@@ -3,7 +3,6 @@ require 'aws-sdk-ec2'
 require 'date'
 require 'optparse'
 require 'pp'
-require 'tty-prompt'
 
 DEBUG = ! ENV['DEBUG'].nil? ? true : false
 
@@ -183,8 +182,5 @@ filter = {
 images = describe_images(filter)
 
 if options[:remove_flag]
-  prompt = TTY::Prompt.new(enable_color: false)
-  if prompt.yes?('Do you want to delete it?')
-    remove_images(images)
-  end
+  remove_images(images)
 end
