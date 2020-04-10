@@ -71,22 +71,22 @@ def filter_images(images, filter)
       end
     end
   end
-
   images
 end
 
 def get_images_of_launch_configurations
   autoscaling = Aws::AutoScaling::Client.new(region: AWS_REGION)
 
-  next_token = ''
-  image_ids  = []
+  next_token = nil
+  image_ids = []
 
-  until next_token.nil?
+  loop do
     resp = autoscaling.describe_launch_configurations({next_token: next_token})
     resp.launch_configurations.each do |configuration|
       image_ids.push configuration.image_id
     end
     next_token = resp.next_token
+    break if next_token.nil?
   end
   image_ids.uniq
 end
@@ -117,7 +117,6 @@ def get_images(filter)
   images = images.sort_by do |image_id, attribute|
     attribute['creation_date']
   end.to_h
-
   images
 end
 
