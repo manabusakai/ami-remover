@@ -52,7 +52,7 @@ $ bundle exec ruby ami-remover.rb --region <region> [-r|--remove]
 For example, delete the AMI that is older than 365 days and has a `Project` tag.
 
 ```
-$ bundle exec ruby ami-remover.rb -r -d 365 --include-tag Project
+$ bundle exec ruby ami-remover.rb --region ap-northeast-1 -r -d 365 --include-tag Project
 ```
 
 ## License
