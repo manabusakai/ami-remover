@@ -91,12 +91,48 @@ def get_images_of_launch_configurations
   image_ids.uniq
 end
 
+def get_launch_templates
+  ec2 = Aws::EC2::Client.new(region: AWS_REGION)
+
+  next_token = nil
+  launch_templates = []
+
+  loop do
+    resp = ec2.describe_launch_templates({next_token: next_token, max_results: 100})
+    resp.launch_templates.each do |template|
+      launch_templates.push template
+    end
+    next_token = resp.next_token
+    break if next_token.nil?
+  end
+  launch_templates
+end
+
+def get_images_of_launch_templates
+  ec2 = Aws::EC2::Client.new(region: AWS_REGION)
+
+  image_ids = []
+
+  get_launch_templates.each do |template|
+    resp = ec2.describe_launch_template_versions({
+      launch_template_id: template.launch_template_id,
+      versions: [template.default_version_number.to_s],
+    })
+    image_ids.push resp.launch_template_versions[0].launch_template_data.image_id
+  end
+  image_ids.uniq
+end
+
 def get_images(filter)
   ec2  = Aws::EC2::Client.new(region: AWS_REGION)
   resp = ec2.describe_images({owners: ['self']})
 
   images = {}
-  exclude_image_ids = get_images_of_launch_configurations
+  exclude_image_ids = []
+
+  exclude_image_ids.concat get_images_of_launch_configurations
+  exclude_image_ids.concat get_images_of_launch_templates
+  exclude_image_ids.uniq!
 
   resp.images.each do |image|
     # Exclude AMI included in launch configurations.
